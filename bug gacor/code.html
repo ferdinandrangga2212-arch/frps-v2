@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FRPS-BUGV2 | MULTI-DEVICE | FIX BG</title>
+    <style>
+        :root {
+            --neon-red: #ff0000;
+            --terminal-green: #00ff41;
+            --bg-black: #000000;
+            --glass-bg: rgba(0, 0, 0, 0.85);
+        }
+
+        /* Reset & Base */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-black);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            color: var(--neon-red);
+        }
+
+        /* 1. **FIXED** Background Video (Full Screen for all devices) */
+        .video-bg {
+            position: fixed;
+            top: 50%; left: 50%;
+            min-width: 100%; min-height: 100%; /* Pastikan menutupi layar */
+            width: auto; height: auto;
+            z-index: 1;
+            transform: translate(-50%, -50%);
+            
+            /* **KUNCINYA AGAR TIDAK KEPOTONG/GEPENG** */
+            object-fit: cover; 
+            object-position: center center; /* Fokus ke tengah video */
+            
+            filter: brightness(0.4) contrast(1.1);
+            pointer-events: none;
+        }
+
+        /* Overlay Scanline */
+        .overlay-fx {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%;
+            z-index: 5; pointer-events: none;
+        }
+
+        /* 2. Responsive UI Container */
+        .wrapper {
+            position: relative;
+            z-index: 100;
+            width: 100%; height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        /* Kotak UI yang beradaptasi */
+        .main-card {
+            width: 100%;
+            max-width: 400px; /* Lebar maksimal di Laptop/Tab */
+            background: var(--glass-bg);
+            border: 2px solid var(--neon-red);
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Penyesuaian untuk layar sangat kecil (HP Jadul) */
+        @media (max-width: 320px) {
+            .main-card { padding: 15px; }
+            h1 { font-size: 1.2rem; }
+        }
+
+        /* Penyesuaian untuk layar lebar (Laptop) */
+        @media (min-width: 1024px) {
+            .main-card { max-width: 450px; border-width: 3px; }
+            h1 { font-size: 2rem; }
+        }
+
+        h1 { margin: 0 0 20px; text-shadow: 0 0 10px red; letter-spacing: 4px; }
+
+        input, select, button {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            padding: 14px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        button {
+            background: var(--neon-red);
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover { background: #fff; box-shadow: 0 0 15px #fff; }
+
+        /* Video Box Mata (Persegi Panjang Responsive) */
+        .eye-box {
+            width: 100%;
+            height: 140px;
+            border: 1px solid var(--neon-red);
+            margin-bottom: 20px;
+            background: #000;
+            overflow: hidden;
+        }
+        .eye-box video {
+            width: 100%; height: 100%;
+            object-fit: cover; /* Fokus ke area mata */
+        }
+
+        /* Progress Bar */
+        .bar-container {
+            width: 100%; height: 12px;
+            border: 1px solid var(--neon-red);
+            margin-top: 15px;
+            background: #111;
+        }
+        .bar-fill {
+            width: 0%; height: 100%;
+            background: var(--neon-red);
+            transition: 0.4s;
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
+        .hidden { display: none !important; }
+        .flicker { animation: blink 0.15s infinite; }
+        @keyframes blink { 0% { opacity: 0.7; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="overlay-fx"></div>
+
+    <div id="p-login">
+        <video id="bg-vid-login" class="video-bg" autoplay loop muted playsinline>
+            <source src="4.mp4" type="video/mp4">
+        </video>
+        <div class="wrapper">
+            <div class="main-card">
+                <h1 class="flicker">FRPS-BUGV2</h1>
+                <input type="text" id="user" placeholder="SYSTEM ID">
+                <input type="password" id="pass" placeholder="PASSWORD">
+                <button onclick="auth()">ACCESS SYSTEM</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="p-loading" class="hidden">
+        <div class="wrapper">
+            <div class="main-card">
+                <h2 style="font-size: 1rem; color: #fff;">SYNCING DATA...</h2>
+                <div class="eye-box">
+                    <video id="vid-mata-load" playsinline>
+                        <source src="mata.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <p style="color: var(--terminal-green); font-size: 11px;">Membuka gerbang protokol...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="p-menu" class="hidden">
+        <audio id="bg-music" loop>
+            <source src="audio.mp3" type="audio/mpeg">
+        </audio>
+        <div class="wrapper">
+            <div class="main-card">
+                <div class="eye-box">
+                    <video id="vid-menu-loop" autoplay loop muted playsinline>
+                        <source src="2.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <input type="number" id="target" placeholder="Target (Ex: 628xxx)">
+                <select id="bug-list">
+                    <option value="" disabled selected>Pilih Jenis Serangan</option>
+                    <option value="DATABASE_ERROR">Database v1</option>
+                    <option value="INFINITE_LAG">Infinite Lag</option>
+                    <option value="UI_FREEZE">UI Freeze</option>
+                    <option value="RAM_EATER">RAM Eater</option>
+                    <option value="STATUS_BUG">Status Destroyer</option>
+                    <option value="MEDIA_CRASH">Media Crash</option>
+                    <option value="CALL_HANG">Voice Call Hang</option>
+                    <option value="V_CARD_LUL">V-Card Exploit</option>
+                    <option value="LINK_VIRUS">Malicious Link</option>
+                    <option value="GROUP_FREEZE">Group Destroyer</option>
+                    <option value="QUERY_BUG">SQL Query Bug</option>
+                    <option value="TOKEN_STEAL">Token Stealer</option>
+                    <option value="ENCRYPT_FAIL">Encryption Fail</option>
+                    <option value="SEARCH_LAG">Search Engine Lag</option>
+                    <option value="SYNC_ERROR">Contact Sync Bug</option>
+                    <option value="BACKUP_KILL">Backup Killer</option>
+                    <option value="STORAGE_FULL">Fake Storage Full</option>
+                    <option value="REBOOT_LOOP">Force Reboot Bug</option>
+                    <option value="SYSTEM_CRASH">Ultimate System Crash</option>
+                    <option value="FRPS_SPECIAL">FRPS SPECIAL BUG</option>
+                </select>
+                <button onclick="startHack()">EXECUTE PROTOCOL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="p-final" class="hidden">
+        <div class="wrapper">
+            <div class="main-card">
+                <h2 id="f-title" style="font-size: 1rem;">INITIALIZING...</h2>
+                <p id="f-desc" style="font-size: 11px; color: #fff;">Sedang memproses...</p>
+                <div class="bar-container">
+                    <div id="progress-bar" class="bar-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password & User (Ganti di sini)
+        const MY_USER = "admin";
+        const MY_PASS = "1";
+
+        function auth() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+
+            if(u === MY_USER && p === MY_PASS) {
+                document.getElementById('p-login').classList.add('hidden');
+                document.getElementById('p-loading').classList.remove('hidden');
+                const v = document.getElementById('vid-mata-load');
+                v.play();
+                v.onended = () => showMenu();
+            } else {
+                alert("ACCESS DENIED: Kredensial Tidak Dikenali!");
+            }
+        }
+
+        function showMenu() {
+            document.getElementById('p-loading').classList.add('hidden');
+            document.getElementById('p-menu').classList.remove('hidden');
+            document.getElementById('bg-music').play();
+            document.getElementById('vid-menu-loop').play();
+        }
+
+        function startHack() {
+            let num = document.getElementById('target').value;
+            const bug = document.getElementById('bug-list').value;
+
+            if(!num || !bug) return alert("Lengkapi data target dan jenis bug!");
+
+            // MEMBERSIHKAN NOMOR: Menghapus spasi, tanda +, dan mengubah 0 di depan jadi 62
+            num = num.replace(/\D/g, ''); // Hapus semua karakter non-angka
+            if (num.startsWith('0')) {
+                num = '62' + num.slice(1);
+            }
+
+            document.getElementById('p-menu').classList.add('hidden');
+            document.getElementById('bg-music').pause();
+            document.getElementById('p-final').classList.remove('hidden');
+
+            const steps = [
+                {t: "CONNECTING...", d: "Menghubungkan ke API WhatsApp..."},
+                {t: "DECRYPTING...", d: "Membuka lapisan enkripsi..."},
+                {t: "INJECTING...", d: `Payload '${bug}' berhasil disuntikkan...`},
+                {t: "FRAGMENTING...", d: "Menghancurkan struktur data..."},
+                {t: "BREACHED!", d: "Menuju target untuk eksekusi..."}
+            ];
+
+            let i = 0;
+            const bar = document.getElementById('progress-bar');
+            const title = document.getElementById('f-title');
+            const desc = document.getElementById('f-desc');
+
+            const timer = setInterval(() => {
+                if(i < steps.length) {
+                    title.innerText = steps[i].t;
+                    desc.innerText = steps[i].d;
+                    bar.style.width = ((i + 1) * 20) + "%";
+                    i++;
+                } else {
+                    clearInterval(timer);
+                    // REDIRECT FINAL: Menggunakan format yang lebih stabil
+                    const finalUrl = "https://api.whatsapp.com/send/?phone=" + num + "&text=SYSTEM_BREACH_FRPS_V2_" + bug + "&type=phone_number&app_absent=0";
+                    window.location.href = finalUrl;
+                }
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
